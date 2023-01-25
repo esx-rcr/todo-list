@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hello_world/components/task_component.dart';
-import 'package:hello_world/entities/task_entity.dart';
 import 'package:hello_world/pages/todo_controller.dart';
+import 'package:hello_world/pages/todo_states.dart';
 
 class TodoPage extends StatefulWidget {
   const TodoPage({Key? key}) : super(key: key);
@@ -12,22 +12,11 @@ class TodoPage extends StatefulWidget {
 
 class _TodoPageState extends State<TodoPage> {
   TodoController controller = TodoController();
-  bool isLoading = true;
-  List<TaskEntity> tasks = [];
 
   @override
   void initState() {
     super.initState();
-
-    getTasks();
-  }
-
-  getTasks() async {
-    tasks = await controller.getTasks();
-
-    setState(() {
-      isLoading = false;
-    });
+    controller.getTasks();
   }
 
   @override
@@ -36,17 +25,32 @@ class _TodoPageState extends State<TodoPage> {
       appBar: AppBar(
         title: const Text("Lista de tarefas"),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
+      body: ValueListenableBuilder(
+        valueListenable: controller,
+        builder: (context, value, child) {
+          if (value is LoadingState) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (value is ErrorState) {
+            return const Text("Deu Ruim");
+          }
+
+          if (value is SuccessState) {
+            var convertido = value;
+            return Padding(
               padding: const EdgeInsets.all(8.0),
               child: ListView.builder(
-                itemCount: tasks.length,
+                itemCount: convertido.result.length,
                 itemBuilder: (context, index) {
-                  return TaskComponent(task: tasks[index]);
+                  return TaskComponent(task: convertido.result[index]);
                 },
               ),
-            ),
+            );
+          }
+
+          return Container();
+        },
+      ),
     );
   }
 }
